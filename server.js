@@ -18,3 +18,35 @@ app.use(cors({
                   {id:7,title:"Layout Plot - Shirdi Road",village:"Rahata",taluka:"Rahata",district:"Ahmednagar",surveyNo:"Plot 8, Shivneri Park",gutNo:"198",type:"Residential",zone:"R-Zone",area:1200,areaUnit:"sqft",price:1560000,pricePerSqft:1300,asrRate:1000,stamp:5,rera:"P52000022G",road:"15 mtr DP Road",water:"Grampanchayat Supply",facing:"East",score:90,checks:{title:true,govt:true,dispute:false,rera:true,mutation:true,encumbrance:true,zone:true,survey:false},seller:"Anil Deshmukh",phone:"9210987654",listed:"2025-03-05",description:"Premium plot near Shirdi. RERA approved."},
                     {id:8,title:"Commercial Corner Plot - Aurangabad",village:"Chikalthana MIDC",taluka:"Aurangabad",district:"Aurangabad",surveyNo:"CTS 88/7",gutNo:"N/A",type:"Commercial",zone:"Commercial",area:2500,areaUnit:"sqft",price:9500000,pricePerSqft:3800,asrRate:3200,stamp:6,rera:"P72200010H",road:"24 mtr Road + Corner",water:"MIDC Supply",facing:"North + East",score:93,checks:{title:true,govt:true,dispute:false,rera:true,mutation:true,encumbrance:false,zone:true,survey:true},seller:"Mohit Pawar",phone:"9109876543",listed:"2025-02-01",description:"Corner commercial plot in Aurangabad MIDC."}
                     ];
+
+app.get("/", (req, res) => {
+    res.json({status:"ok",service:"PlotTrust API",version:"1.0.0",plots:PLOTS.length});
+});
+
+app.get("/plots", (req, res) => {
+    const {q,type,zone,district,maxPrice,minScore,sort} = req.query;
+    let results = [...PLOTS];
+    if (q) { const qry=q.toLowerCase(); results=results.filter(p=>(p.title+" "+p.village+" "+p.district+" "+p.type+" "+p.zone).toLowerCase().includes(qry)); }
+    if (type) results=results.filter(p=>p.type===type);
+    if (zone) results=results.filter(p=>p.zone===zone);
+    if (district) results=results.filter(p=>p.district===district);
+    if (maxPrice) results=results.filter(p=>p.price<=parseInt(maxPrice));
+    if (minScore) results=results.filter(p=>p.score>=parseInt(minScore));
+    if (sort==="price_asc") results.sort((a,b)=>a.price-b.price);
+    else if (sort==="price_desc") results.sort((a,b)=>b.price-a.price);
+    else if (sort==="newest") results.sort((a,b)=>new Date(b.listed)-new Date(a.listed));
+    else results.sort((a,b)=>b.score-a.score);
+    res.json({count:results.length,plots:results});
+});
+
+app.get("/plots/:id", (req, res) => {
+    const id=parseInt(req.params.id);
+    const plot=PLOTS.find(p=>p.id===id);
+    if (!plot) return res.status(404).json({error:"Plot not found",id});
+    res.json(plot);
+});
+
+app.use((req,res)=>{ res.status(404).json({error:"Route not found"}); });
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT,()=>{ console.log("PlotTrust API running on port "+PORT); });
